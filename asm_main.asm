@@ -1,84 +1,125 @@
 ;
-; file: asm_main.asm
-; Author
-; Description: 
+NTEGER SQUARE ROOT
 ;
+; file: intsqrt.asm
 ;
+; Author: Matthew Sprigg
+;
+; Description: Calculates the integer square root
+; 	of a number rounded down. This is useful for
+;	certain algorithms where an integer does not
+;	exceed the square root of a certain number
+;	because it takes far fewer bytes than other
+;	square root algorithms such as the babylonian
+;	method.
+;
+; Example: 16 - 1 - 3 - 5 - 7 = 0
+;
+;	There are four odd subtractors, thus the root is zero.
+;
+;Ex 2:	4 - 1 - 3 = 0;
+;
+;	Root = 2.
+;
+;Ex 3: 12 - 1 - 3 - 5 - 7 = -4
+;	
+;	Less than zero, therefore 12 is not an even square.
+;	The square root is between 3 and 4.
+;	The integer square root is 3.
+
+
 
 %include "asm_io.inc"
-
 
 
 ;--------------------------------------------------------
 ; initialized data is put in the .data segment
 ;
 segment .data
-	prompt	db, "Enter number to test if it is an even square:",10,0
-	pass	db, " is an even square. Its root is ", 10, 0
-	fail	db, " is not an even square. Its root rounded down is. ", 10, 0
 
 ;--------------------------------------------------------
 ; uninitialized data is put in the .bss segment
 ;
 segment .bss
-	input	resd	; mem for user input.
 
 ;--------------------------------------------------------
 ; code is put in the .text segment
 ;
 segment .text
-        global  asm_main
-
-;--------------------------------------------------------
-; MAIN FUNCTION						;
-;--------------------------------------------------------
-
-asm_main:
-
-;--------------------------------------------------------
-; PROLOGUE						;
-;--------------------------------------------------------
-        enter   0,0               ; setup routine
-        pusha
-
-;--------------------------------------------------------
-; CODE							;
-;--------------------------------------------------------
-
-	mov 	eax, prompt	; print prompt.
-	call 	print_string	;
-
-	call	read_int	; Stores int from keyboard in eax.
-	mov 	[input], eax
-
-	mov	ebx, 0		; start counter at 0
-	mov	ecx, 1		; first subtractor.
-	mov	edx, [input]
-while:	; ( [input] > 0)
-	sub	edx, ecx	; subtract ecx.
-	inc	ebx		; count odds
-	add	ecx, 2		; inc subtractor by 2.
-	cmp	edx, 0 ; if input >  0, loop.
-	jgt	while
-	jz	pass		; if equals 0, goto pass.
-				; else
-fail:
-	mov eax, [input]
-	call print_int
-	mov eax, [fail]
-	call print_string
-	
-pass:
-
-;--------------------------------------------------------
-; EPILOGUE						;
-;--------------------------------------------------------
-        popa
-        mov     eax, 0            ; return back to C
-        leave
-        ret
+        global intsqrt 		; make accessable to other modules.
 
 
 ;--------------------------------------------------------
 ; FUNCTIONS / SUBPROGRAMS			 	;
 ;--------------------------------------------------------
+
+
+intsqrt:
+;
+; int intsqrt(int n) {
+; 
+;	 int counter = 0;
+;	 int subtractor = 1;
+;
+;	 while (n > 0)	{
+;		n -= subtractor;
+;		subtractor+=2
+;		counter++
+;	}
+;
+;	return counter;
+;}
+
+;--------------------------------------------------------
+; PROLOGUE						;
+;--------------------------------------------------------
+
+;     	   VAR TABLE
+; ==============================
+;   Data  | Pointer | Pseudocode
+; ------------------------------
+; local 1 @ [ebp-4] <-- counter
+; local 2 @ [ebp-8] <-- subtractor
+; sav EBP @ [ebp]
+; retaddr @ [ebp+4]
+; param 1 @ [ebp+8] <-- n
+	
+	push 	ebp		; save original ebp val on stack.
+
+	mov	ebp, esp	; new EBP = ESP
+	sub	esp, 8		; Local vars need 2 dwords.
+
+	mov dword [ebp-4], 0	; counter = 0; 
+	mov dword [ebp-8], 1	; subtractor = 1;
+	
+	
+;-------------------------------------------------------
+; CODE							;
+;--------------------------------------------------------
+	
+
+while_rt: ; (n > 0)
+	sub	[ebp+8], [ebp-8]	; n -= subtractor;
+	add	[ebp-8], 2		; subtractor += 2;
+	inc	[ebp-4]			; counter++;
+	
+	cmp	[ebp+8], 0		; if (n <= 0) break;
+	jgt	while_rt
+	
+	setne	eax			; eax = 1 if (n != 0) else 0	
+	sub	[ebp-4], eax		; sub 1 from counter if n!=0
+
+	; Because the integer square root is one less than the result
+	; 	in counter UNLESS the result is zero, it is necessary
+	;	to have two possible results from the single var counter.
+	;	SETNE removes the need for branches and takes fewer bytes.
+	
+	mov	eax, [ebp-2]		; return counter
+
+;--------------------------------------------------------
+; EPILOGUE						;
+;--------------------------------------------------------
+	
+	add	esp, 8	; clean up local vars.
+	pop	ebp	; restore ebp.
+	ret		; return.
