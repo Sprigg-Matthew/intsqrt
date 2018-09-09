@@ -1,4 +1,4 @@
-; INTEGER SQUARE ROOT
+NTEGER SQUARE ROOT
 ;
 ; file: intsqrt.asm
 ;
@@ -78,7 +78,7 @@ intsqrt:
 ;   Data  | Pointer | Pseudocode
 ; ------------------------------
 ; local 1 @ [ebp-4] <-- counter
-; local 2 @ [ebp-8] <-- subtractor
+; local 2 @ [eax]   <-- subtractor
 ; sav EBP @ [ebp]
 ; retaddr @ [ebp+4]
 ; param 1 @ [ebp+8] <-- n
@@ -86,42 +86,45 @@ intsqrt:
 	push 	ebp		; save original ebp val on stack.
 
 	mov	ebp, esp	; new EBP = ESP
-	sub	esp, 8		; Local vars need 2 dwords.
-
-	push	ebx		; Preserve ebx.
+	sub	esp, 4		; Local vars need 2 dwords.
 
 	mov dword [ebp-4], 0	; counter = 0; 
-	mov dword [ebp-8], 1	; subtractor = 1;
-	
-	mov eax, 0		; eax init at zero.	
+	;mov dword [ebp-8], 1
+		
+	mov	eax, 1		; subtractor = 1; 
+	; arithmatic instructions such as sub cannot
+	; operate on two memory locations.
 ;-------------------------------------------------------
 ; CODE							;
 ;--------------------------------------------------------
 	
-	mov	ebx, [ebp-8]
-	; arithmatic instructions such as sub cannot
-	; operate on two memory locations.
 while_rt: ; (n > 0)
-	sub	[ebp+8], ebx	; n -= subtractor;
-	add	ebx, 2		; subtractor += 2;
+	sub	[ebp+8], eax	; n -= subtractor;
+	add	eax, 2		; subtractor += 2;
 	inc dword [ebp-4]	; counter++;
 
 	cmp dword [ebp+8], 0	; if (n <= 0) break;
 	jg	while_rt
+
 	
-	setne	al			; eax = 1 if (n != 0) else 0	
-	add	eax, [ebp-4]		; add counter and return.
+	setne	bl			; bl = 1 if (n != 0) else 0	
+	mov	eax, [ebp-4]		; eax = counter.
+	dec	eax			; counter--
+	add	eax, bl			; counter += bl and ret to C.
 
 	; Because the integer square root is one less than the result
 	; 	in counter UNLESS the result is zero, it is necessary
 	;	to have two possible results from the single var counter.
 	;	SETNE removes the need for branches and takes fewer bytes.
+	;
+	; counter stored in EAX is decremented because it must return
+	; 	one less than the counted value unless n == 0.
 
 ;--------------------------------------------------------
 ; EPILOGUE						;
 ;--------------------------------------------------------
-	
-	pop	ebx	; restore ebx
-	add	esp, 8	; clean up local vars.
+	; counter returned via EAX.
+	add	esp, 4	; clean up local vars.
 	pop	ebp	; restore ebp.
 	ret		; return.
+
