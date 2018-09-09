@@ -6,12 +6,16 @@
  */
 
 #include "cdecl.h"
+#define MIN 0
+#define MAX 20
+
 
 int PRE_CDECL asm_main( void ) POST_CDECL;
 
 int main()
 {
-    int ret_status;
-    ret_status = asm_main();
-    return ret_status;
+	for (int i=MIN; i < MAX; i++) {
+    		printf("The intsqrt of %d is %d," i,  intsqrt(i));
+	}
+    	return 0;
 }
