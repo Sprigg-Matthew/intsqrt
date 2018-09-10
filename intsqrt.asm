@@ -1,4 +1,4 @@
-NTEGER SQUARE ROOT
+; INTEGER SQUARE ROOT
 ;
 ; file: intsqrt.asm
 ;
@@ -78,7 +78,7 @@ intsqrt:
 ;   Data  | Pointer | Pseudocode
 ; ------------------------------
 ; local 1 @ [ebp-4] <-- counter
-; local 2 @ [eax]   <-- subtractor
+; local 2 @ [ebx] <-- subtractor
 ; sav EBP @ [ebp]
 ; retaddr @ [ebp+4]
 ; param 1 @ [ebp+8] <-- n
@@ -88,42 +88,40 @@ intsqrt:
 	mov	ebp, esp	; new EBP = ESP
 	sub	esp, 4		; Local vars need 2 dwords.
 
+	push	ebx		; Preserve ebx.
+
 	mov dword [ebp-4], 0	; counter = 0; 
-	;mov dword [ebp-8], 1
-		
-	mov	eax, 1		; subtractor = 1; 
+	;mov dword [ebp-8], 1	; subtractor = 1;
+	
+	mov	ebx, 1		; subtractor = 1;
 	; arithmatic instructions such as sub cannot
 	; operate on two memory locations.
-;-------------------------------------------------------
+;--------------------------------------------------------
 ; CODE							;
 ;--------------------------------------------------------
 	
-while_rt: ; (n > 0)
-	sub	[ebp+8], eax	; n -= subtractor;
-	add	eax, 2		; subtractor += 2;
+do_while: ; (n > 0)
+	sub	[ebp+8], ebx	; n -= subtractor;
+	add	ebx, 2		; subtractor += 2;
 	inc dword [ebp-4]	; counter++;
 
 	cmp dword [ebp+8], 0	; if (n <= 0) break;
-	jg	while_rt
-
+	jg	do_while
 	
-	setne	bl			; bl = 1 if (n != 0) else 0	
-	mov	eax, [ebp-4]		; eax = counter.
-	dec	eax			; counter--
-	add	eax, bl			; counter += bl and ret to C.
-
+	setne	bl
+	movzx	ebx, bl
+	mov	eax, [ebp-4]
+	sub	eax, ebx
 	; Because the integer square root is one less than the result
 	; 	in counter UNLESS the result is zero, it is necessary
 	;	to have two possible results from the single var counter.
 	;	SETNE removes the need for branches and takes fewer bytes.
-	;
-	; counter stored in EAX is decremented because it must return
-	; 	one less than the counted value unless n == 0.
 
 ;--------------------------------------------------------
 ; EPILOGUE						;
 ;--------------------------------------------------------
-	; counter returned via EAX.
+	
+	pop	ebx	; restore ebx
 	add	esp, 4	; clean up local vars.
 	pop	ebp	; restore ebp.
 	ret		; return.
